@@ -240,4 +240,5 @@ def get_row_col(pos):  # gets x,y positions and return which row and col are pre
         if 24 <= y <= 240:
             return 12, 1
         return 12, 0
-    return None
+    else:
+        return None

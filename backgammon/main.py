@@ -36,7 +36,13 @@ def main():
                     Graphics.dice_roll_pressed(firstDice, secondDice)
                 print(pos)
                 if Graphics.is_triangle_pressed(pos):
-                    board.turn(firstDice, secondDice, Graphics.convert_pos_to_row(pos))
+                    if firstDice == secondDice:
+                        result = [secondDice, secondDice, firstDice, firstDice]
+                    else:
+                        result = [firstDice, secondDice]
+                    pos = Graphics.convert_pos_to_row(pos)
+                    board.newturn(pos, result)
+                    # board.turn(firstDice, secondDice, Graphics.convert_pos_to_row(pos))
         pygame.display.update()
     pygame.quit()
 

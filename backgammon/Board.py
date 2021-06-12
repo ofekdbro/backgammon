@@ -8,6 +8,11 @@ import Constants
 class Board:
 
     def __init__(self):
+        self.turn = 0
+        self.mode = "from"
+        self.x_from = None
+        self.x_to = None
+
         self.board = numpy.zeros(29, int)  # 1-24 is the board, 25
         self.Unit_List = []
         self.board[1] = 2
@@ -39,6 +44,41 @@ class Board:
             if place == self.Unit_List[i].place:
                 return self.Unit_List[i]
 
+    def helper(self, pos):
+        if self.search_unit_by_place(pos) is not None:
+            if self.counter % 2 == 0 and self.search_unit_by_place(pos).color == 1 \
+                    or self.counter % 2 == 1 and self.search_unit_by_place(pos).color == -1:
+                return pos
+        else:
+            return pos
+        return None
+
+    def calcSteps(self):
+        return abs(self.x_from - self.x_to)
+
+    def newturn(self, pos, result):
+        if self.turn < len(result):
+            if self.mode == "from":
+                ret = self.helper(pos)
+                if ret:
+                    self.x_from = ret
+                    self.mode = "to"
+            elif self.mode == "to":
+                ret = self.helper(pos)
+                if ret:
+                    self.x_to = ret
+                    self.new_move_unit(self.search_unit_by_place(self.x_from), self.calcSteps(), result)
+
+                    self.x_from = None
+                    self.x_to = None
+                    self.turn += 1
+                    if self.turn == len(result):
+                        self.turn = 0
+                        self.mode = "from"
+                        self.x_from = None
+                        self.x_to = None
+                        self.counter = (self.counter + 1) % 2
+
     def turn(self, dice1, dice2, pos):
         if self.search_unit_by_place(pos) is not None:
             if self.counter % 2 == 0 and self.search_unit_by_place(pos).color == 1 \
@@ -58,9 +98,13 @@ class Board:
                             unit = self.search_unit_by_place(pos)
                             if steps is not None:
                                 if self.legal_move(unit, steps, dice1, dice2):  # gets a second click and checks if it is legal move
-                                    self.move_unit(unit, steps)
+                                    self.move_unit(unit, steps, dice1, dice2)
                                     result[i] = 0
                                     i += 1
+                                    for pos in pygame.event.get():
+                                        if pos.type == pygame.MOUSEBUTTONDOWN:
+                                            pos = pygame.mouse.get_pos()
+
                         # for pos in pygame.event.get():
                         # if Graphics.is_triangle_pressed(pos):
                         # pos = Graphics.convert_pos_to_row(pos)
@@ -79,11 +123,17 @@ class Board:
             else:
                 Constants.Screen.blit(pygame.image.load("Press_again.png"), (0, Constants.Screen_Height / 2 - 60))
 
+    def new_move_unit(self, unit, steps, result):
+        self.board[unit.place] -= 1 * unit.color
+        self.board[unit.place + (steps * unit.color)] += 1 * unit.color
+        unit.set_place(unit.place + (steps * unit.color))
+        Graphics.draw_game_board(self.board, result[0], result[1])
+
     def move_unit(self, unit, steps, dice1, dice2):
         self.board[unit.place] -= 1 * unit.color
         self.board[unit.place + (steps * unit.color)] += 1 * unit.color
         unit.set_place(unit.place + (steps * unit.color))
-        Graphics.draw_game_board(self.board)  # prints the board graphically
+        Graphics.draw_game_board(self.board, dice1, dice2)  # prints the board graphically
 
     def legal_move(self, unit, steps, dice1 = 1, dice2 = 1):  # * needs to be checked again* - checks if the move is legal
         # and returns true\false
@@ -106,11 +156,12 @@ class Board:
             for pos2 in pygame.event.get():
                 if pos2.type == pygame.MOUSEBUTTONDOWN:
                     pos2 = pygame.mouse.get_pos()
-                    if Graphics.convert_pos_to_row(pos2) >= 1:
-                        pos2 = Graphics.convert_pos_to_row(pos2)
+                    ret = Graphics.convert_pos_to_row(pos2)
+                    if ret >= 1:
+                        pos2 = ret
                         # Graphics.move_unit_by_mouse(pos,
                         # (abs(pos - pos2) * Board.search_unit_by_place(pos2).color))
-                        return abs(pos - pos2) * (self.search_unit_by_place(pos2)).color
+                        return abs(pos - pos2)
 
     def move_unit_by_mouse(self, pos, steps):
         # gets the triangles that the player chose and checks if it is a possible move,
