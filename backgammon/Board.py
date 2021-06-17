@@ -44,16 +44,18 @@ class Board:
             if place == self.Unit_List[i].place:
                 return self.Unit_List[i]
 
-    def helper(self, pos):
+    def helper(self, pos):  # checks if the pos is valid for the move
         if self.search_unit_by_place(pos) is not None:
-            if self.counter % 2 == 0 and self.search_unit_by_place(pos).color == 1 \
-                    or self.counter % 2 == 1 and self.search_unit_by_place(pos).color == -1:
+            if self.counter == 0 and self.search_unit_by_place(pos).color == 1 \
+                    or self.counter == 1 and self.search_unit_by_place(pos).color == -1:
                 return pos
         else:
             return pos
         return None
 
-    def calcSteps(self):
+    def calcSteps(self):  # calculates the steps from x to y
+        if self.x_from is None or self.x_to is None:
+            return 0
         return abs(self.x_from - self.x_to)
 
     def newturn(self, pos, result):
@@ -62,12 +64,20 @@ class Board:
                 ret = self.helper(pos)
                 if ret:
                     self.x_from = ret
-                    self.mode = "to"
+                    if self.is_returning():
+                        self.return_unit(self.search_unit_by_place(ret), ret)
+                    else:
+                        self.mode = "to"
             elif self.mode == "to":
                 ret = self.helper(pos)
                 if ret:
                     self.x_to = ret
-                    self.new_move_unit(self.search_unit_by_place(self.x_from), self.calcSteps(), result)
+                    if self.calcSteps() is not 0:
+                        self.new_move_unit(self.search_unit_by_place(self.x_from), self.calcSteps())
+                        self.draw_game_board(result[0], result[1])  # prints the board graphically
+                        self.mode = "from"
+                    else:
+                        self.turn -= 1
 
                     self.x_from = None
                     self.x_to = None
@@ -79,99 +89,14 @@ class Board:
                         self.x_to = None
                         self.counter = (self.counter + 1) % 2
 
-    def turn(self, dice1, dice2, pos):
-        if self.search_unit_by_place(pos) is not None:
-            if self.counter % 2 == 0 and self.search_unit_by_place(pos).color == 1 \
-                    or self.counter % 2 == 1 and self.search_unit_by_place(pos).color == -1:
-                result = [0, 0, 0, 0]
-                if dice1 == dice2:
-                    result = [dice1, dice1, dice1, dice1]
-                else:
-                    result = [dice1, dice2]
-                i = 0
-                while not self.check_win() and sum(result) > 0 and i < len(result):  # if no one won
-                    if not self.is_returning():
-                        # if there is a unit which needs to get back to the game
-                        while sum(result) > 0 and i < len(result) and not self.is_burn():
-                            # checks if the player isn't in a "burn phase"
-                            steps = self.triangles_pressed(pos)
-                            unit = self.search_unit_by_place(pos)
-                            if steps is not None:
-                                if self.legal_move(unit, steps, dice1, dice2):  # gets a second click and checks if it is legal move
-                                    self.move_unit(unit, steps, dice1, dice2)
-                                    result[i] = 0
-                                    i += 1
-                                    for pos in pygame.event.get():
-                                        if pos.type == pygame.MOUSEBUTTONDOWN:
-                                            pos = pygame.mouse.get_pos()
-
-                        # for pos in pygame.event.get():
-                        # if Graphics.is_triangle_pressed(pos):
-                        # pos = Graphics.convert_pos_to_row(pos)
-                        while sum(result) > 0 and i < len(result) and self.is_burn():
-                            # if in "burn phase" it burns the Unit
-                            self.burn(self.search_unit_by_place(pos), result[i])
-                            result[i] = 0
-                            i += 1
-                    else:
-                        while sum(result) > 0 and i < len(result) and self.is_returning():
-                            self.returning(self.search_unit_by_place(pos), result[i])
-                            result[i] = 0
-                            # returns the Unit to the game
-                            i += 1
-                self.counter += 1
-            else:
-                Constants.Screen.blit(pygame.image.load("Press_again.png"), (0, Constants.Screen_Height / 2 - 60))
-
-    def new_move_unit(self, unit, steps, result):
+    def new_move_unit(self, unit, steps):
         self.board[unit.place] -= 1 * unit.color
         self.board[unit.place + (steps * unit.color)] += 1 * unit.color
         unit.set_place(unit.place + (steps * unit.color))
-        Graphics.draw_game_board(self.board, result[0], result[1])
-
-    def move_unit(self, unit, steps, dice1, dice2):
-        self.board[unit.place] -= 1 * unit.color
-        self.board[unit.place + (steps * unit.color)] += 1 * unit.color
-        unit.set_place(unit.place + (steps * unit.color))
-        Graphics.draw_game_board(self.board, dice1, dice2)  # prints the board graphically
-
-    def legal_move(self, unit, steps, dice1 = 1, dice2 = 1):  # * needs to be checked again* - checks if the move is legal
-        # and returns true\false
-        if unit is not None:
-            if 24 >= unit.place + (steps * unit.color) >= 1:
-                # checks if in the board
-                if (self.board[unit.place + (steps * unit.color)]) * unit.color >= 0:
-                    # checks if step on the same color so the unit will be able to move there
-                    return True
-                elif abs(self.board[unit.place + (steps * unit.color)]) == 1:  # checks if the unit is eatable
-                    # self.eat_unit(unit, self.search_unit_by_place(self.board[unit.place + (steps * unit.color)]),steps)
-                    return True
-            else:
-                return True
-                # self.move_to_edge(unit, steps)
-
-    def triangles_pressed(self, pos):  # checks if the mouse pressed on
-        # 1 triangle and wait for another press so the turn can be
-        if pos >= 1:
-            for pos2 in pygame.event.get():
-                if pos2.type == pygame.MOUSEBUTTONDOWN:
-                    pos2 = pygame.mouse.get_pos()
-                    ret = Graphics.convert_pos_to_row(pos2)
-                    if ret >= 1:
-                        pos2 = ret
-                        # Graphics.move_unit_by_mouse(pos,
-                        # (abs(pos - pos2) * Board.search_unit_by_place(pos2).color))
-                        return abs(pos - pos2)
-
-    def move_unit_by_mouse(self, pos, steps):
-        # gets the triangles that the player chose and checks if it is a possible move,
-        # then send the action into other methods that moves the unit
-        if self.legal_move(self.search_unit_by_place(pos), steps):
-            self.move_unit(self.search_unit_by_place(pos), steps)
 
     def eat_unit(self, unit, unit2, steps):  # let unit1 to eat the second unit
-        unit2.set_place(self.board[26 - self.counter % 2])
-        self.move_unit(unit, steps)
+        unit2.set_place(self.board[26 - self.counter])
+        self.new_move_unit(unit, steps)
 
     def move_to_edge(self, unit, steps):
         if unit.place + (steps * unit.color) < 1:
@@ -183,24 +108,24 @@ class Board:
         if unit.place == dice or unit.place == 24 - dice:
             if abs(self.board[unit.place]) > 0:
                 self.board[unit.place] += 1 * unit.color
-                self.board[27 + self.counter % 2] += 1 * unit.color
+                self.board[27 + self.counter] += 1 * unit.color
             else:
                 self.move_unit(unit, dice)
 
     def is_returning(self):  # checks if the player needs to return any of his units
-        if self.board[25 + self.counter % 2] != 0:
+        if self.board[25 + self.counter] != 0:
             return True
         return False
 
-    def returning(self, unit, dice):  # returns the
-        if self.counter % 2 == 0:
-            if self.board[abs(dice - 24)] > 0:
+    def return_unit(self, unit, pos):  # returns the
+        if self.counter == 0:
+            if self.board[pos] >= 0:
                 self.board[25] -= 1
-                self.move_unit(unit, (abs(dice - 24)))
-            else:
-                if self.board[dice] < 0:
-                    self.move_unit(unit, dice)
-                    self.board[26] += 1
+                self.new_move_unit(unit, pos)
+        else:
+            if self.board[pos] <= 0:
+                self.new_move_unit(unit, pos)
+                self.board[26] += 1
 
     def is_burn(self):  # checks if the player is in burn phase and return True\False
         if self.counter % 2 == 0:
@@ -229,3 +154,16 @@ class Board:
             Constants.Screen.blit(Constants.White_player_win_screen, (400, 300))
             return True
         return False
+
+    def draw_game_board(self, dice1, dice2):  # refreshing screen basically
+        i = 1
+        Graphics.draw_window()
+        Graphics.show_dice(dice1, 1)
+        Graphics.show_dice(dice2, 2)
+        Graphics.draw_dice_roll()
+        while i <= 24:
+            if self.board[i] > 0:
+                Graphics.show_unit(Constants.White_Unit, i, self.board[i])
+            else:
+                Graphics.show_unit(Constants.Black_Unit, i, abs(self.board[i]))
+            i += 1

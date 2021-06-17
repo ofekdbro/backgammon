@@ -1,0 +1,138 @@
+    def move_unit_by_mouse(self, pos, steps):
+        # gets the triangles that the player chose and checks if it is a possible move,
+        # then send the action into other methods that moves the unit
+        if self.legal_move(self.search_unit_by_place(pos), steps):
+            self.move_unit(self.search_unit_by_place(pos), steps)
+
+         def turn(self, dice1, dice2, pos):
+        if self.search_unit_by_place(pos) is not None:
+            if self.counter % 2 == 0 and self.search_unit_by_place(pos).color == 1 \
+                    or self.counter % 2 == 1 and self.search_unit_by_place(pos).color == -1:
+                result = [0, 0, 0, 0]
+                if dice1 == dice2:
+                    result = [dice1, dice1, dice1, dice1]
+                else:
+                    result = [dice1, dice2]
+                i = 0
+                while not self.check_win() and sum(result) > 0 and i < len(result):  # if no one won
+                    if not self.is_returning():
+                        # if there is a unit which needs to get back to the game
+                        while sum(result) > 0 and i < len(result) and not self.is_burn():
+                            # checks if the player isn't in a "burn phase"
+                            steps = self.triangles_pressed(pos)
+                            unit = self.search_unit_by_place(pos)
+                            if steps is not None:
+                                if self.legal_move(unit, steps, dice1, dice2):
+                                    # gets a second click and checks if it is legal move
+                                    self.move_unit(unit, steps, dice1, dice2)
+                                    result[i] = 0
+                                    i += 1
+                                    for pos in pygame.event.get():
+                                        if pos.type == pygame.MOUSEBUTTONDOWN:
+                                            pos = pygame.mouse.get_pos()
+
+                        # for pos in pygame.event.get():
+                        # if Graphics.is_triangle_pressed(pos):
+                        # pos = Graphics.convert_pos_to_row(pos)
+                        while sum(result) > 0 and i < len(result) and self.is_burn():
+                            # if in "burn phase" it burns the Unit
+                            self.burn(self.search_unit_by_place(pos), result[i])
+                            result[i] = 0
+                            i += 1
+                    else:
+                        while sum(result) > 0 and i < len(result) and self.is_returning():
+                            self.returning(self.search_unit_by_place(pos), result[i])
+                            result[i] = 0
+                            # returns the Unit to the game
+                            i += 1
+                self.counter += 1
+            else:
+                Constants.Screen.blit(pygame.image.load("Press_again.png"), (0, Constants.Screen_Height / 2 - 60))
+
+
+    def move_unit(self, unit, steps, dice1, dice2):
+            self.board[unit.place] -= 1 * unit.color
+            self.board[unit.place + (steps * unit.color)] += 1 * unit.color
+            unit.set_place(unit.place + (steps * unit.color))
+            Graphics.draw_game_board(self.board, dice1, dice2)
+
+        def legal_move(self, unit, steps, dice1=1, dice2=1):  # needs to be checked again* - checks if the move is legal
+        # and returns true\false
+        if unit is not None:
+            if 24 >= unit.place + (steps * unit.color) >= 1:
+                # checks if in the board
+                if (self.board[unit.place + (steps * unit.color)]) * unit.color >= 0:
+                    # checks if step on the same color so the unit will be able to move there
+                    return True
+                elif abs(self.board[unit.place + (steps * unit.color)]) == 1:  # checks if the unit is eatable
+                    # self.eat_unit(unit, self.search_unit_by_place(self.board[unit.place + (steps * unit.color)]),steps)
+                    return True
+            else:
+                return True
+                # self.move_to_edge(unit, steps)
+
+
+    def triangles_pressed(self, pos):  # checks if the mouse pressed on
+        # 1 triangle and wait for another press so the turn can be
+        if pos >= 1:
+            for pos2 in pygame.event.get():
+                if pos2.type == pygame.MOUSEBUTTONDOWN:
+                    pos2 = pygame.mouse.get_pos()
+                    ret = Graphics.convert_pos_to_row(pos2)
+                    if ret >= 1:
+                        pos2 = ret
+                        # Graphics.move_unit_by_mouse(pos,
+                        # (abs(pos - pos2) * Board.search_unit_by_place(pos2).color))
+                        return abs(pos - pos2)
+
+def get_row_col(pos):  # gets x,y positions and return which row and col are pressed
+    x, y = pos
+    if 30 <= x <= 70:
+        if 24 <= y <= 240:
+            return [1, 1]
+        return [1, 0]
+    elif 87 <= x <= 140:
+        if 24 <= y <= 240:
+            return [2, 1]
+        return [2, 0]
+    elif 145 <= x <= 200:
+        if 24 <= y <= 240:
+            return [3, 1]
+        return [3, 0]
+    elif 206 <= x <= 250:
+        if 24 <= y <= 240:
+            return [4, 1]
+        return [4, 0]
+    elif 270 <= x <= 306:
+        if 24 <= y <= 240:
+            return [5, 1]
+        return [5, 0]
+    elif 325 <= x <= 375:
+        if 24 <= y <= 240:
+            return [6, 1]
+        return [6, 0]
+    elif 431 <= x <= 467:
+        if 24 <= y <= 240:
+            return [7, 1]
+        return [7, 0]
+    elif 485 <= x <= 537:
+        if 24 <= y <= 240:
+            return [8, 1]
+        return [8, 0]
+    elif 554 <= x <= 585:
+        if 24 <= y <= 240:
+            return [9, 1]
+        return [9, 0]
+    elif 604 <= x <= 652:
+        if 24 <= y <= 240:
+            return [10, 1]
+        return [10, 0]
+    elif 672 <= x <= 701:
+        if 24 <= y <= 240:
+            return [11, 1]
+        return [11, 0]
+    elif 724 <= x <= 776:
+        if 24 <= y <= 240:
+            return [12, 1]
+        return [12, 0]
+    return None

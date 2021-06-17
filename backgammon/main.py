@@ -42,7 +42,6 @@ def main():
                         result = [firstDice, secondDice]
                     pos = Graphics.convert_pos_to_row(pos)
                     board.newturn(pos, result)
-                    # board.turn(firstDice, secondDice, Graphics.convert_pos_to_row(pos))
         pygame.display.update()
     pygame.quit()
 

@@ -104,7 +104,7 @@ def draw_game_board(arr, dice1, dice2):  # refreshing screen basically
     while i <= 24:
         if arr[i] > 0:
             show_unit(Constants.White_Unit, i, arr[i])
-        elif arr[i] < 0:
+        else:
             show_unit(Constants.Black_Unit, i, abs(arr[i]))
         i += 1
 
@@ -114,72 +114,17 @@ def show_unit(color, col, quantity):  # gets the units color, which col, and qua
     if col > 12:
         while i < quantity:
             Constants.Screen.blit(color, (Constants.colX[col % 12],
-                                          Constants.colY[1] + (Constants.Unit_Height * i)))
+                                          Constants.colY[0] - (Constants.Unit_Height * i)))
             i += 1
     else:
         while i < quantity:
             Constants.Screen.blit(color, (Constants.colX[col % 12],
-                                          Constants.colY[0] - (Constants.Unit_Height * i)))
+                                          Constants.colY[1] + (Constants.Unit_Height * i)))
             i += 1
 
 
 def is_triangle_pressed(pos):
     return get_row_col(pos) is not None
-
-
-"""""
-def get_row_col(pos):  # gets x,y positions and return which row and col are pressed
-    x, y = pos
-    if 30 <= x <= 70:
-        if 24 <= y <= 240:
-            return [1, 1]
-        return [1, 0]
-    elif 87 <= x <= 140:
-        if 24 <= y <= 240:
-            return [2, 1]
-        return [2, 0]
-    elif 145 <= x <= 200:
-        if 24 <= y <= 240:
-            return [3, 1]
-        return [3, 0]
-    elif 206 <= x <= 250:
-        if 24 <= y <= 240:
-            return [4, 1]
-        return [4, 0]
-    elif 270 <= x <= 306:
-        if 24 <= y <= 240:
-            return [5, 1]
-        return [5, 0]
-    elif 325 <= x <= 375:
-        if 24 <= y <= 240:
-            return [6, 1]
-        return [6, 0]
-    elif 431 <= x <= 467:
-        if 24 <= y <= 240:
-            return [7, 1]
-        return [7, 0]
-    elif 485 <= x <= 537:
-        if 24 <= y <= 240:
-            return [8, 1]
-        return [8, 0]
-    elif 554 <= x <= 585:
-        if 24 <= y <= 240:
-            return [9, 1]
-        return [9, 0]
-    elif 604 <= x <= 652:
-        if 24 <= y <= 240:
-            return [10, 1]
-        return [10, 0]
-    elif 672 <= x <= 701:
-        if 24 <= y <= 240:
-            return [11, 1]
-        return [11, 0]
-    elif 724 <= x <= 776:
-        if 24 <= y <= 240:
-            return [12, 1]
-        return [12, 0]
-    return None
-"""
 
 
 def is_dice_roll_pressed(pos):  # checks if the dice roll button pressed and returns true\false
