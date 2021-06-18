@@ -45,12 +45,18 @@ class Board:
                 return self.Unit_List[i]
 
     def helper(self, pos):  # checks if the pos is valid for the move
-        if self.search_unit_by_place(pos) is not None:
-            if self.counter == 0 and self.search_unit_by_place(pos).color == 1 \
-                    or self.counter == 1 and self.search_unit_by_place(pos).color == -1:
+        if self.mode == "from":
+            if self.search_unit_by_place(pos) is not None:
+                if self.counter == 0 and self.search_unit_by_place(pos).color == 1 \
+                        or self.counter == 1 and self.search_unit_by_place(pos).color == -1:
+                    return pos
+        elif self.mode == "to":
+            # check if the plsce is empty or
+            # if there is the other color only 1 return pos
+            # else none
+            if self.search_unit_by_place(pos) is None or \
+                    (self.search_unit_by_place(pos) and abs(self.board[pos]) == 1):
                 return pos
-        else:
-            return pos
         return None
 
     def calcSteps(self):  # calculates the steps from x to y
@@ -66,13 +72,15 @@ class Board:
                     self.x_from = ret
                     if self.is_returning():
                         self.return_unit(self.search_unit_by_place(ret), ret)
-                    else:
-                        self.mode = "to"
+                    # elif self.is_burn():
+                    # x = self.burn(ret)
+                    # if not x:
+                    self.mode = "to"
             elif self.mode == "to":
                 ret = self.helper(pos)
                 if ret:
                     self.x_to = ret
-                    if self.calcSteps() is not 0:
+                    if self.calcSteps() != 0:
                         self.new_move_unit(self.search_unit_by_place(self.x_from), self.calcSteps())
                         self.draw_game_board(result[0], result[1])  # prints the board graphically
                         self.mode = "from"
@@ -104,20 +112,28 @@ class Board:
         else:
             self.move_unit(unit, abs((unit.place + steps) - 24))
 
-    def burn(self, unit, dice):  # burns the unit
-        if unit.place == dice or unit.place == 24 - dice:
+    def new_burn(self, pos):
+        if abs(self.board[pos]) > 0:
+            self.board[self.search_unit_by_place(pos)] -= 1 * (self.counter * -1)
+            self.board[27 + self.counter] += 1 * (self.counter * -1)
+            return True
+        else:
+            return False
+
+    def burn(self, unit, pos):  # burns the unit
+        if unit.place == pos or unit.place == 24 - pos:
             if abs(self.board[unit.place]) > 0:
                 self.board[unit.place] += 1 * unit.color
                 self.board[27 + self.counter] += 1 * unit.color
             else:
-                self.move_unit(unit, dice)
+                return False
 
     def is_returning(self):  # checks if the player needs to return any of his units
         if self.board[25 + self.counter] != 0:
             return True
         return False
 
-    def return_unit(self, unit, pos):  # returns the
+    def return_unit(self, unit, pos):  # returns the unit
         if self.counter == 0:
             if self.board[pos] >= 0:
                 self.board[25] -= 1
