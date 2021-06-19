@@ -13,7 +13,8 @@ class Board:
         self.x_from = None
         self.x_to = None
 
-        self.board = numpy.zeros(29, int)  # 1-24 is the board, 25
+        self.board = numpy.zeros(29, int)  # 1-24 is the board, 25 is for returning black, 26 is for returning white
+        # 27 is for burned
         self.Unit_List = []
         self.board[1] = 2
         self.add_list(2, 1, 1, self.Unit_List)
@@ -81,10 +82,15 @@ class Board:
                 if ret:
                     self.x_to = ret
                     if self.calcSteps() != 0:
-                        self.new_move_unit(self.search_unit_by_place(self.x_from), self.calcSteps())
+                        if self.is_eating(self.x_to):
+                            self.eat_unit(self.search_unit_by_place(self.x_from),
+                                          self.search_unit_by_place(self.x_to), self.calcSteps())
+                        else:
+                            self.new_move_unit(self.search_unit_by_place(self.x_from), self.calcSteps())
                         self.draw_game_board(result[0], result[1])  # prints the board graphically
                         self.mode = "from"
                     else:
+                        self.mode = "from"
                         self.turn -= 1
 
                     self.x_from = None
@@ -97,13 +103,21 @@ class Board:
                         self.x_to = None
                         self.counter = (self.counter + 1) % 2
 
+    def is_eating(self, pos):  # checks if eating unit is valid
+        if self.search_unit_by_place(pos) is not None:
+            if self.board[pos] * self.search_unit_by_place(self.x_from).color == -1:
+                return True
+        return False
+
     def new_move_unit(self, unit, steps):
         self.board[unit.place] -= 1 * unit.color
         self.board[unit.place + (steps * unit.color)] += 1 * unit.color
         unit.set_place(unit.place + (steps * unit.color))
 
     def eat_unit(self, unit, unit2, steps):  # let unit1 to eat the second unit
-        unit2.set_place(self.board[26 - self.counter])
+        self.board[unit2.place] = 0
+        unit2.set_place(25 + self.counter)
+        self.board[unit2.place] += 1 * unit2.color
         self.new_move_unit(unit, steps)
 
     def move_to_edge(self, unit, steps):

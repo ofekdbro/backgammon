@@ -16,13 +16,14 @@ def main():
     Graphics.draw_window()
     Constants.setup_colX()
     Constants.setup_colY()
-    Graphics.draw_all_units_start_phase()
+    #Graphics.draw_all_units_start_phase()
     firstDice = Dice.roll()
     secondDice = Dice.roll()
     Graphics.show_dice(firstDice, 1)
     Graphics.show_dice(secondDice, 2)
     Graphics.draw_dice_roll()
     board = Board()
+    board.draw_game_board(firstDice, secondDice)
     while running:
         clock.tick(Constants.FPS)
         for event in pygame.event.get():
