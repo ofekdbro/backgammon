@@ -141,3 +141,33 @@ def get_row_col(pos):  # gets x,y positions and return which row and col are pre
     burn:
         self.board[self.search_unit_by_place(pos)] -= 1 * (self.counter * -1)
         self.board[27 + self.counter] += 1 * (self.counter * -1)
+
+            def burn(self, unit, pos):  # burns the unit
+        if unit.place == pos or unit.place == 24 - pos:
+            if abs(self.board[unit.place]) > 0:
+                self.board[unit.place] += 1 * unit.color
+                self.board[27 + self.counter] += 1 * unit.color
+            else:
+                return False
+
+    return:
+        def return_unit(self, unit, pos):  # returns the unit
+        if self.counter == 0:
+            if self.board[pos] >= -1:
+                if self.board[pos] == -1:
+                    unit.set_place(0)
+                    self.eat_unit(unit, self.search_unit_by_place(pos), pos)
+                else:
+                    unit.set_place(0)
+                    self.new_move_unit(unit, pos)
+                self.board[25] -= 1
+        else:
+            if self.board[pos] <= 1:
+                if self.board[pos] == 1:
+                    unit.set_place(25)
+                    self.eat_unit(unit, self.search_unit_by_place(pos), pos)
+                else:
+                    unit.set_place(25)
+                    self.new_move_unit(unit, pos)
+                self.board[26] += 1
+

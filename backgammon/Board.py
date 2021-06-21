@@ -143,15 +143,15 @@ class Board:
         return None
 
     def new_burn(self, pos):
-        if self.counter == 0:
-            self.board[pos] -= 1
-            self.board[28] += 1
-        else:
-            self.board[pos] + 1
-            self.board[27] -= 1
+        if abs(self.board[pos]) > 0:
+            if self.counter == 0:
+                self.board[pos] -= 1
+                self.board[28] += 1
+            else:
+                self.board[pos] + 1
+                self.board[27] -= 1
 
     def is_burn(self):  # checks if the player is in burn phase and return True\False
-        """
         if self.counter == 0:
             if self.sum_board(19) + self.board[28] == 15:
                 return True
@@ -159,19 +159,17 @@ class Board:
             if self.sum_board(1) + self.board[27] == -15:
                 return True
         return False
-        """
-        return True
+
+    def new_move_unit(self, unit, steps):
+        self.board[unit.place] -= 1 * unit.color
+        self.board[unit.place + (steps * unit.color)] += 1 * unit.color
+        unit.set_place(unit.place + (steps * unit.color))
 
     def is_eating(self, pos):  # checks if eating unit is valid
         if self.search_unit_by_place(pos) is not None:
             if self.board[pos] * self.search_unit_by_place(self.x_from).color == -1:
                 return True
         return False
-
-    def new_move_unit(self, unit, steps):
-        self.board[unit.place] -= 1 * unit.color
-        self.board[unit.place + (steps * unit.color)] += 1 * unit.color
-        unit.set_place(unit.place + (steps * unit.color))
 
     def eat_unit(self, unit, unit2, steps):  # let unit1 to eat the second unit
         self.board[unit2.place] = 0
@@ -191,44 +189,8 @@ class Board:
                 self.board[pos] = -1
                 self.search_unit_by_place(26).set_place(pos)
 
-    def move_to_edge(self, unit, steps):
-        if unit.place + (steps * unit.color) < 1:
-            self.move_unit(unit, abs(steps - unit.place))
-        else:
-            self.move_unit(unit, abs((unit.place + steps) - 24))
-
-
-
-    def burn(self, unit, pos):  # burns the unit
-        if unit.place == pos or unit.place == 24 - pos:
-            if abs(self.board[unit.place]) > 0:
-                self.board[unit.place] += 1 * unit.color
-                self.board[27 + self.counter] += 1 * unit.color
-            else:
-                return False
-
     def is_returning(self):  # checks if the player needs to return any of his units
         return self.board[25 + self.counter] != 0
-
-    def return_unit(self, unit, pos):  # returns the unit
-        if self.counter == 0:
-            if self.board[pos] >= -1:
-                if self.board[pos] == -1:
-                    unit.set_place(0)
-                    self.eat_unit(unit, self.search_unit_by_place(pos), pos)
-                else:
-                    unit.set_place(0)
-                    self.new_move_unit(unit, pos)
-                self.board[25] -= 1
-        else:
-            if self.board[pos] <= 1:
-                if self.board[pos] == 1:
-                    unit.set_place(25)
-                    self.eat_unit(unit, self.search_unit_by_place(pos), pos)
-                else:
-                    unit.set_place(25)
-                    self.new_move_unit(unit, pos)
-                self.board[26] += 1
 
     def new_return_unit(self, pos):
         if 6 >= pos >= 1:
@@ -252,10 +214,12 @@ class Board:
 
     def check_win(self):  # checks if anyone won and shows the win screen
         if self.board[27] == -15:
-            Constants.Screen.blit(Constants.Black_player_win_screen, (400, 300))
+            Constants.Screen.blit(Constants.Black_player_win_screen,
+                                  (Constants.Screen_Width / 2 - 100, Constants.Screen_Height / 2 - 60))
             return True
         elif self.board[28] == 15:
-            Constants.Screen.blit(Constants.White_player_win_screen, (400, 300))
+            Constants.Screen.blit(Constants.White_player_win_screen,
+                                  (Constants.Screen_Width / 2 - 100, Constants.Screen_Height / 2 - 60))
             return True
         return False
 
