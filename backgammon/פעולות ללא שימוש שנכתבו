@@ -136,3 +136,8 @@ def get_row_col(pos):  # gets x,y positions and return which row and col are pre
             return [12, 1]
         return [12, 0]
     return None
+
+
+    burn:
+        self.board[self.search_unit_by_place(pos)] -= 1 * (self.counter * -1)
+        self.board[27 + self.counter] += 1 * (self.counter * -1)

@@ -12,6 +12,7 @@ class Board:
         self.mode = "from"
         self.x_from = None
         self.x_to = None
+        self.game_over = False
 
         self.board = numpy.zeros(29, int)  # 1-24 is the board, 25 is for returning black, 26 is for returning white
         # 27 is for burned
@@ -60,48 +61,106 @@ class Board:
                 return pos
         return None
 
+    def return_helper(self, pos):
+        if 6 >= pos >= 1:
+            if self.board[pos] >= -1:
+                return pos
+        elif 24 >= pos >= 19:
+            if self.board[pos] <= 1:
+                return pos
+        return None
+
+    def is_eatable_for_return(self, pos):
+        if abs(self.board[pos]) == 1:
+            if self.counter == 0:
+                if self.board[pos] == -1:
+                    return True
+            else:
+                if self.board[pos] == 1:
+                    return True
+        return False
+
     def calcSteps(self):  # calculates the steps from x to y
         if self.x_from is None or self.x_to is None:
             return 0
         return abs(self.x_from - self.x_to)
 
     def newturn(self, pos, result):
-        if self.turn < len(result):
-            if self.mode == "from":
-                ret = self.helper(pos)
-                if ret:
-                    self.x_from = ret
-                    if self.is_returning():
-                        self.return_unit(self.search_unit_by_place(ret), ret)
-                    # elif self.is_burn():
-                    # x = self.burn(ret)
-                    # if not x:
-                    self.mode = "to"
-            elif self.mode == "to":
-                ret = self.helper(pos)
-                if ret:
-                    self.x_to = ret
-                    if self.calcSteps() != 0:
-                        if self.is_eating(self.x_to):
-                            self.eat_unit(self.search_unit_by_place(self.x_from),
-                                          self.search_unit_by_place(self.x_to), self.calcSteps())
+        if not self.game_over:
+            if self.turn < len(result):
+                if self.is_returning():
+                    ret = self.return_helper(pos)
+                    if ret:
+                        if self.is_eatable_for_return(ret):
+                            self.eat_from_eaten(ret)
                         else:
-                            self.new_move_unit(self.search_unit_by_place(self.x_from), self.calcSteps())
-                        self.draw_game_board(result[0], result[1])  # prints the board graphically
-                        self.mode = "from"
-                    else:
-                        self.mode = "from"
-                        self.turn -= 1
+                            self.new_return_unit(ret)
+                        self.turn += 1
+                        self.draw_game_board(result[0], result[1])
+                elif self.is_burn():
+                    ret = self.burn_helper(pos)
+                    if ret:
+                        self.new_burn(pos)
+                        self.turn += 1
+                        self.game_over = self.check_win()
+                        self.draw_game_board(result[0], result[1])
+                elif self.mode == "from":
+                    ret = self.helper(pos)
+                    if ret:
+                        self.x_from = ret
+                        self.mode = "to"
+                elif self.mode == "to":
+                    ret = self.helper(pos)
+                    if ret:
+                        self.x_to = ret
+                        if self.calcSteps() != 0:
+                            if self.is_eating(self.x_to):
+                                self.eat_unit(self.search_unit_by_place(self.x_from),
+                                              self.search_unit_by_place(self.x_to), self.calcSteps())
+                            else:
+                                self.new_move_unit(self.search_unit_by_place(self.x_from), self.calcSteps())
+                            self.draw_game_board(result[0], result[1])  # prints the board graphically
+                            self.mode = "from"
+                        else:
+                            self.mode = "from"
+                            self.turn -= 1
 
-                    self.x_from = None
-                    self.x_to = None
-                    self.turn += 1
-                    if self.turn == len(result):
-                        self.turn = 0
-                        self.mode = "from"
                         self.x_from = None
                         self.x_to = None
-                        self.counter = (self.counter + 1) % 2
+                        self.turn += 1
+                        if self.turn == len(result):
+                            self.turn = 0
+                            self.mode = "from"
+                            self.x_from = None
+                            self.x_to = None
+                            self.counter = (self.counter + 1) % 2
+
+    def burn_helper(self, pos):
+        if self.counter == 0 and 24 >= pos >= 19:
+            return pos
+        elif self.counter == 1 and 6 >= pos >= 1:
+            return pos
+        return None
+
+    def new_burn(self, pos):
+        if self.counter == 0:
+            self.board[pos] -= 1
+            self.board[28] += 1
+        else:
+            self.board[pos] + 1
+            self.board[27] -= 1
+
+    def is_burn(self):  # checks if the player is in burn phase and return True\False
+        """
+        if self.counter == 0:
+            if self.sum_board(19) + self.board[28] == 15:
+                return True
+        else:
+            if self.sum_board(1) + self.board[27] == -15:
+                return True
+        return False
+        """
+        return True
 
     def is_eating(self, pos):  # checks if eating unit is valid
         if self.search_unit_by_place(pos) is not None:
@@ -116,9 +175,21 @@ class Board:
 
     def eat_unit(self, unit, unit2, steps):  # let unit1 to eat the second unit
         self.board[unit2.place] = 0
-        unit2.set_place(25 + self.counter)
+        unit2.set_place(26 - self.counter)
         self.board[unit2.place] += 1 * unit2.color
         self.new_move_unit(unit, steps)
+
+    def eat_from_eaten(self, pos):
+        if 6 >= pos >= 1:
+            if self.board[pos] == -1:
+                self.board[25] -= 1
+                self.board[pos] = 1
+                self.search_unit_by_place(25).set_place(pos)
+        elif 24 >= pos >= 19:
+            if self.board[pos] == 1:
+                self.board[26] += 1
+                self.board[pos] = -1
+                self.search_unit_by_place(26).set_place(pos)
 
     def move_to_edge(self, unit, steps):
         if unit.place + (steps * unit.color) < 1:
@@ -126,13 +197,7 @@ class Board:
         else:
             self.move_unit(unit, abs((unit.place + steps) - 24))
 
-    def new_burn(self, pos):
-        if abs(self.board[pos]) > 0:
-            self.board[self.search_unit_by_place(pos)] -= 1 * (self.counter * -1)
-            self.board[27 + self.counter] += 1 * (self.counter * -1)
-            return True
-        else:
-            return False
+
 
     def burn(self, unit, pos):  # burns the unit
         if unit.place == pos or unit.place == 24 - pos:
@@ -143,36 +208,45 @@ class Board:
                 return False
 
     def is_returning(self):  # checks if the player needs to return any of his units
-        if self.board[25 + self.counter] != 0:
-            return True
-        return False
+        return self.board[25 + self.counter] != 0
 
     def return_unit(self, unit, pos):  # returns the unit
         if self.counter == 0:
-            if self.board[pos] >= 0:
+            if self.board[pos] >= -1:
+                if self.board[pos] == -1:
+                    unit.set_place(0)
+                    self.eat_unit(unit, self.search_unit_by_place(pos), pos)
+                else:
+                    unit.set_place(0)
+                    self.new_move_unit(unit, pos)
                 self.board[25] -= 1
-                self.new_move_unit(unit, pos)
         else:
-            if self.board[pos] <= 0:
-                self.new_move_unit(unit, pos)
+            if self.board[pos] <= 1:
+                if self.board[pos] == 1:
+                    unit.set_place(25)
+                    self.eat_unit(unit, self.search_unit_by_place(pos), pos)
+                else:
+                    unit.set_place(25)
+                    self.new_move_unit(unit, pos)
                 self.board[26] += 1
 
-    def is_burn(self):  # checks if the player is in burn phase and return True\False
-        if self.counter % 2 == 0:
-            if self.sum_board(19) + self.board[28] == 15:
-                return True
-        else:
-            if self.sum_board(1) + self.board[27] == -15:
-                return True
-        return False
+    def new_return_unit(self, pos):
+        if 6 >= pos >= 1:
+            self.board[25] -= 1
+            self.board[pos] += 1
+            self.search_unit_by_place(25).set_place(pos)
+        elif 24 <= pos <= 19:
+            self.board[26] += 1
+            self.board[pos] -= 1
+            self.search_unit_by_place(26).set_place(pos)
 
     def sum_board(self, i):  # sums the both ends of the boards
         sum = 0
         if i == 19:
-            for i in range(19, 24):
+            for i in range(19, 25):
                 sum += self.board[i]
         elif i == 1:
-            for i in range(1, 6):
+            for i in range(1, 7):
                 sum += self.board[i]
         return sum
 
